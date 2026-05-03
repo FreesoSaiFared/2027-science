@@ -12,7 +12,7 @@
 		"performanceBenefit": "Compositor-friendly timelines avoid per-frame JS scroll work",
 		"fallbackStrategy": "Static notes and normal sticky positioning",
 		"exampleSnippet": ".note { animation-timeline: view(); animation-name: fade-in; }",
-		"docsUrl": "TODO: add primary documentation URL"
+		"docsUrl": "https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Scroll-driven_animations"
 	},
 	{
 		"id": "view-transitions",
@@ -27,7 +27,7 @@
 		"performanceBenefit": "Browser captures and animates state changes without custom layout code",
 		"fallbackStrategy": "Instant state change or CSS transition",
 		"exampleSnippet": "document.startViewTransition(() => setMode('expanded'))",
-		"docsUrl": "TODO: add primary documentation URL"
+		"docsUrl": "https://developer.mozilla.org/en-US/docs/Web/API/View_Transition_API"
 	},
 	{
 		"id": "css-anchor-positioning",
@@ -42,7 +42,7 @@
 		"performanceBenefit": "Layout engine positions overlays without measuring rectangles in JS",
 		"fallbackStrategy": "Popover centered in viewport or inline note",
 		"exampleSnippet": ".card { position-anchor: --phrase; top: anchor(bottom); left: anchor(left); }",
-		"docsUrl": "TODO: add primary documentation URL"
+		"docsUrl": "https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Anchor_positioning"
 	},
 	{
 		"id": "popover-api",
@@ -57,7 +57,7 @@
 		"performanceBenefit": "Built-in top layer, focus handling, light-dismiss behavior",
 		"fallbackStrategy": "Inline disclosure element",
 		"exampleSnippet": "<aside popover id=explain>Explanation</aside>",
-		"docsUrl": "TODO: add primary documentation URL"
+		"docsUrl": "https://developer.mozilla.org/en-US/docs/Web/API/Popover_API"
 	},
 	{
 		"id": "dialog-commandfor",
@@ -72,7 +72,7 @@
 		"performanceBenefit": "Native focus trapping and less JS state",
 		"fallbackStrategy": "Button-managed dialog open/close handlers",
 		"exampleSnippet": "<dialog id=mask><form method=dialog>...</form></dialog>",
-		"docsUrl": "TODO: add primary documentation URL"
+		"docsUrl": "https://developer.mozilla.org/en-US/docs/Web/API/HTMLDialogElement"
 	},
 	{
 		"id": "css-custom-highlight",
@@ -87,7 +87,7 @@
 		"performanceBenefit": "No markup churn; preserves semantic text and selection",
 		"fallbackStrategy": "Add temporary mark/span fallback",
 		"exampleSnippet": "CSS.highlights.set('focus', new Highlight(range))",
-		"docsUrl": "TODO: add primary documentation URL"
+		"docsUrl": "https://developer.mozilla.org/en-US/docs/Web/API/CSS_Custom_Highlight_API"
 	},
 	{
 		"id": "navigation-api",
@@ -102,7 +102,7 @@
 		"performanceBenefit": "Browser-native navigation lifecycle",
 		"fallbackStrategy": "SvelteKit router defaults",
 		"exampleSnippet": "navigation.addEventListener('navigate', event => { ... })",
-		"docsUrl": "TODO: add primary documentation URL"
+		"docsUrl": "https://developer.mozilla.org/en-US/docs/Web/API/Navigation_API"
 	},
 	{
 		"id": "declarative-shadow-dom",
@@ -117,7 +117,7 @@
 		"performanceBenefit": "Parse-time encapsulation without JS boot cost",
 		"fallbackStrategy": "Normal light DOM widgets",
 		"exampleSnippet": "<template shadowrootmode=\"open\"><style>...</style></template>",
-		"docsUrl": "TODO: add primary documentation URL"
+		"docsUrl": "https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_shadow_DOM#declaratively_with_html"
 	},
 	{
 		"id": "css-carousels",
@@ -132,7 +132,7 @@
 		"performanceBenefit": "Scroll snapping avoids gesture JS",
 		"fallbackStrategy": "Scroll-snap list with buttons",
 		"exampleSnippet": ".figures { scroll-snap-type: x mandatory; }",
-		"docsUrl": "TODO: add primary documentation URL"
+		"docsUrl": "https://developer.chrome.com/blog/carousels-with-css"
 	},
 	{
 		"id": "scroll-state-queries",
@@ -147,7 +147,7 @@
 		"performanceBenefit": "CSS reacts to scroll state without observers",
 		"fallbackStrategy": "IntersectionObserver fallback",
 		"exampleSnippet": "@container scroll-state(stuck: top) { .note { opacity: 1 } }",
-		"docsUrl": "TODO: add primary documentation URL"
+		"docsUrl": "https://developer.chrome.com/blog/css-scroll-state-queries"
 	},
 	{
 		"id": "editcontext-api",
@@ -162,7 +162,7 @@
 		"performanceBenefit": "Native text input pipeline for custom editors",
 		"fallbackStrategy": "contenteditable/textarea fallback",
 		"exampleSnippet": "const ctx = new EditContext();",
-		"docsUrl": "TODO: add primary documentation URL"
+		"docsUrl": "https://developer.mozilla.org/en-US/docs/Web/API/EditContext_API"
 	},
 	{
 		"id": "webgpu",
@@ -177,7 +177,7 @@
 		"performanceBenefit": "Modern GPU API with explicit pipelines",
 		"fallbackStrategy": "SVG/canvas/static diagrams",
 		"exampleSnippet": "const adapter = await navigator.gpu.requestAdapter()",
-		"docsUrl": "TODO: add primary documentation URL"
+		"docsUrl": "https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API"
 	},
 	{
 		"id": "html-sanitizer-api",
@@ -192,7 +192,7 @@
 		"performanceBenefit": "Native sanitizer can reduce dependency weight",
 		"fallbackStrategy": "Server-side sanitization or inert DOM parser",
 		"exampleSnippet": "const safe = new Sanitizer().sanitizeFor('div', html)",
-		"docsUrl": "TODO: add primary documentation URL"
+		"docsUrl": "https://developer.mozilla.org/en-US/docs/Web/API/HTML_Sanitizer_API"
 	},
 	{
 		"id": "chrome-built-in-ai",
@@ -207,7 +207,7 @@
 		"performanceBenefit": "Avoids network latency/cost for eligible local tasks",
 		"fallbackStrategy": "Provider Scout remote/local adapters",
 		"exampleSnippet": "const session = await LanguageModel.create()",
-		"docsUrl": "TODO: add primary documentation URL"
+		"docsUrl": "https://developer.chrome.com/docs/ai/built-in"
 	},
 	{
 		"id": "wasm-simd",
@@ -222,7 +222,7 @@
 		"performanceBenefit": "SIMD accelerates local compute without server upload",
 		"fallbackStrategy": "Scalar WASM/JS fallback",
 		"exampleSnippet": "WebAssembly.validate(new Uint8Array([...simd bytes...]))",
-		"docsUrl": "TODO: add primary documentation URL"
+		"docsUrl": "https://developer.mozilla.org/en-US/docs/WebAssembly/Reference/SIMD"
 	},
 	{
 		"id": "colrv1-fonts",
@@ -237,7 +237,7 @@
 		"performanceBenefit": "Vector color glyphs scale without images",
 		"fallbackStrategy": "Plain text/SVG icons",
 		"exampleSnippet": "@supports font-tech(color-COLRv1) { ... }",
-		"docsUrl": "TODO: add primary documentation URL"
+		"docsUrl": "https://developer.chrome.com/blog/colrv1-fonts"
 	},
 	{
 		"id": "css-container-style-queries",
@@ -252,7 +252,7 @@
 		"performanceBenefit": "CSS resolves component layout locally",
 		"fallbackStrategy": "Viewport media queries",
 		"exampleSnippet": ".card { container-type: inline-size; } @container (min-width: 30rem) { ... }",
-		"docsUrl": "TODO: add primary documentation URL"
+		"docsUrl": "https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Containment/Container_queries"
 	},
 	{
 		"id": "css-scope-nesting",
@@ -267,6 +267,6 @@
 		"performanceBenefit": "Less build tooling and fewer accidental selector collisions",
 		"fallbackStrategy": "Flat CSS selectors",
 		"exampleSnippet": "@scope (.article) { h2 { margin-block-start: 3rem; } }",
-		"docsUrl": "TODO: add primary documentation URL"
+		"docsUrl": "https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@scope"
 	}
 ]

@@ -74,6 +74,7 @@
 					<p><strong>{cap.browserPrimitive}</strong></p>
 					<p>{cap.readerUseCase}</p>
 					<p><span class="pill">{cap.status}</span></p>
+					<a href={cap.docsUrl} target="_blank" rel="external noreferrer">Primary docs</a>
 				</article>
 			{/each}
 		</div>

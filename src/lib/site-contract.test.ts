@@ -63,4 +63,11 @@ describe('2027.science site contract', () => {
 		expect(operations).toContain('npm run ops:check');
 		expect(operations).toContain('non-mutating');
 	});
+
+	test('surfaces capability database primary docs from system check', () => {
+		const systemCheck = readFileSync('src/routes/system-check/+page.svelte', 'utf8');
+
+		expect(systemCheck).toContain('href={cap.docsUrl}');
+		expect(systemCheck).toContain('Primary docs');
+	});
 });
