@@ -1,0 +1,34 @@
+{
+	"title": "Night Lab Reader Sheet",
+	"slug": "night-lab-reader",
+	"zoneA": {
+		"mockup": "night-lab-reader.png",
+		"note": "Zone A is the final page mockup and must not be sliced in v1."
+	},
+	"zoneB": {
+		"assets": [
+			{
+				"id": "E001",
+				"name": "source_orb",
+				"role": "citation affordance",
+				"target": "reader margin"
+			},
+			{
+				"id": "E002",
+				"name": "diagram_seed",
+				"role": "generated diagram placeholder",
+				"target": "article figure"
+			}
+		]
+	},
+	"zoneC": {
+		"layout": "two-column publication with scroll-revealed marginal cards",
+		"theme": "warm paper, deep ink, spectral blue accents",
+		"interactions": [
+			"pointer dwell highlight",
+			"popover source cards",
+			"view-transition expansion"
+		],
+		"cssFeatures": ["custom-highlight", "popover", "anchor-positioning", "scroll-driven-animations"]
+	}
+}

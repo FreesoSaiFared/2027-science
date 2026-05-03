@@ -1,0 +1,13 @@
+[Unit]
+Description=2027.science SvelteKit dev preview
+After=network.target
+
+[Service]
+Type=simple
+User=ned
+WorkingDirectory=/home/ned/2027-science
+ExecStart=/usr/bin/env npm run dev -- --host 127.0.0.1 --port 5173
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

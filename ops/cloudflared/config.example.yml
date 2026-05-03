@@ -1,0 +1,10 @@
+# Example only. Do not copy over production config without review.
+tunnel: 00000000-0000-0000-0000-000000000000
+credentials-file: /home/ned/.cloudflared/00000000-0000-0000-0000-000000000000.json
+metrics: 127.0.0.1:43128
+ingress:
+  - hostname: lab.2027.science
+    service: http://localhost:5173
+  - hostname: origin-lab.2027.science
+    service: http://localhost:8788
+  - service: http_status:404
