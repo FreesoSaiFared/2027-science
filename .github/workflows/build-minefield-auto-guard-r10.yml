@@ -5,7 +5,7 @@ on:
     branches:
       - minefield-auto-guard-r10-20260727
     paths:
-      - artifacts/minefield/DT-RUN-MF-NATIVE-AUTO-GUARD__RECOVERY__v1.9.6-r10.zip.b64
+      - artifacts/minefield/DT-RUN-MF-NATIVE-AUTO-GUARD__RECOVERY__v1.9.6-r10.zip.b64.part-*
       - .github/workflows/build-minefield-auto-guard-r10.yml
 
 permissions:
@@ -22,10 +22,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          src='artifacts/minefield/DT-RUN-MF-NATIVE-AUTO-GUARD__RECOVERY__v1.9.6-r10.zip.b64'
+          prefix='artifacts/minefield/DT-RUN-MF-NATIVE-AUTO-GUARD__RECOVERY__v1.9.6-r10.zip.b64.part-'
           dst='artifacts/minefield/DT-RUN-MF-NATIVE-AUTO-GUARD__RECOVERY__v1.9.6-r10.zip'
-          test -f "$src"
-          base64 -d "$src" > "$dst"
+          parts=("${prefix}"*)
+          test "${#parts[@]}" -eq 8
+          cat "${parts[@]}" | base64 -d > "$dst"
           echo 'd24d5e1e1405d029d7117237b3c852f7cd752917de404572c4d17f32f1f46629  artifacts/minefield/DT-RUN-MF-NATIVE-AUTO-GUARD__RECOVERY__v1.9.6-r10.zip' | sha256sum -c -
           unzip -t "$dst"
       - name: Commit materialized ZIP
