@@ -1,0 +1,42 @@
+name: Build Minefield Auto Guard r10 binary
+
+on:
+  push:
+    branches:
+      - minefield-auto-guard-r10-20260727
+    paths:
+      - artifacts/minefield/DT-RUN-MF-NATIVE-AUTO-GUARD__RECOVERY__v1.9.6-r10.zip.b64
+      - .github/workflows/build-minefield-auto-guard-r10.yml
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: minefield-auto-guard-r10-20260727
+      - name: Decode and verify canonical ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          src='artifacts/minefield/DT-RUN-MF-NATIVE-AUTO-GUARD__RECOVERY__v1.9.6-r10.zip.b64'
+          dst='artifacts/minefield/DT-RUN-MF-NATIVE-AUTO-GUARD__RECOVERY__v1.9.6-r10.zip'
+          test -f "$src"
+          base64 -d "$src" > "$dst"
+          echo 'd24d5e1e1405d029d7117237b3c852f7cd752917de404572c4d17f32f1f46629  artifacts/minefield/DT-RUN-MF-NATIVE-AUTO-GUARD__RECOVERY__v1.9.6-r10.zip' | sha256sum -c -
+          unzip -t "$dst"
+      - name: Commit materialized ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'doubletab-build-bot'
+          git config user.email 'doubletab-build-bot@users.noreply.github.com'
+          git add artifacts/minefield/DT-RUN-MF-NATIVE-AUTO-GUARD__RECOVERY__v1.9.6-r10.zip
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Materialize Minefield Auto Guard r10 DT-RUN ZIP'
+          git push origin HEAD:minefield-auto-guard-r10-20260727
