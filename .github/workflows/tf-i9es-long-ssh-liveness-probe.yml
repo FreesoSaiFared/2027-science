@@ -1,0 +1,50 @@
+name: TF i9es Long SSH Liveness Probe
+
+on:
+  push:
+    branches:
+      - tf/i9es-anything-analyzer-phase1
+    paths:
+      - .github/workflows/tf-i9es-long-ssh-liveness-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Measure SSH server-banner latency and identity
+        shell: bash
+        run: |
+          set -u
+          HOST=24.132.164.28
+          PORT=22
+          EXPECTED='SHA256:WhJT0a8/8guNLsi6NzoE8Mkmj5eyUYa7Y+nUZK9KlyM'
+          echo 'SCHEMA=TF_I9ES_LONG_SSH_LIVENESS/1'
+          echo "UTC=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo '=== RAW BANNER WAIT (90s) ==='
+          start=$(date +%s)
+          set +e
+          timeout 90 bash -c "exec 3<>/dev/tcp/$HOST/$PORT; IFS= read -r -t 85 line <&3; printf 'BANNER=%s\n' \"\$line\"" 2>&1
+          raw_rc=$?
+          set -e
+          end=$(date +%s)
+          echo "RAW_RC=$raw_rc ELAPSED=$((end-start))"
+
+          echo '=== SSH-KEYSCAN (90s) ==='
+          start=$(date +%s)
+          rm -f /tmp/scan /tmp/err /tmp/fp
+          timeout 95 ssh-keyscan -T 90 -p "$PORT" -t ed25519 "$HOST" > /tmp/scan 2>/tmp/err || true
+          end=$(date +%s)
+          echo "KEYSCAN_ELAPSED=$((end-start))"
+          cat /tmp/err || true
+          cat /tmp/scan || true
+          if [ -s /tmp/scan ]; then
+            awk '{print $2" "$3}' /tmp/scan | ssh-keygen -lf - -E sha256 | tee /tmp/fp
+            if grep -Fq "$EXPECTED" /tmp/fp; then echo 'HOSTKEY_MATCH=1'; else echo 'HOSTKEY_MATCH=0'; fi
+          else
+            echo 'HOSTKEY_MATCH=UNKNOWN'
+          fi
+          echo 'LONG_SSH_LIVENESS_COMPLETE=1'
