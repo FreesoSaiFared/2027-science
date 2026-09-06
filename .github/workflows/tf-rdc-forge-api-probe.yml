@@ -1,0 +1,38 @@
+name: TF RDC Forge API Probe
+
+on:
+  push:
+    branches:
+      - tf/i9es-anything-analyzer-phase1
+    paths:
+      - .github/workflows/tf-rdc-forge-api-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect Forgejo through currently resolving RDC alias
+        shell: bash
+        run: |
+          set -u
+          base=https://rdc.transductive.art
+          echo 'SCHEMA=TF_RDC_FORGE_API/1'
+          for path in \
+            '/api/v1/version' \
+            '/api/v1/repos/search?q=2027-science&limit=50' \
+            '/api/v1/users/FreesoSaiFared/repos?limit=50' \
+            '/api/v1/users/Gerson/repos?limit=50'
+          do
+            echo "===== $path ====="
+            rm -f /tmp/h /tmp/b
+            curl -ksS --connect-timeout 5 --max-time 15 -D /tmp/h -o /tmp/b "$base$path" || true
+            sed -n '1,30p' /tmp/h 2>/dev/null || true
+            echo "BODY_BYTES=$(wc -c </tmp/b 2>/dev/null || echo 0)"
+            head -c 20000 /tmp/b 2>/dev/null || true
+            echo
+          done
+          echo 'RDC_FORGE_API_PROBE_COMPLETE=1'
