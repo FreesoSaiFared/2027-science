@@ -1,0 +1,105 @@
+name: TF i9es Anything Analyzer Phase 1 Autonomous
+
+on:
+  push:
+    branches:
+      - tf/i9es-anything-analyzer-phase1
+    paths:
+      - .github/workflows/tf-i9es-anything-analyzer-phase1-autonomous.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  phase1:
+    runs-on: self-hosted
+    timeout-minutes: 90
+    steps:
+      - name: Guard exact target host
+        shell: bash
+        run: |
+          set -euo pipefail
+          h=$(hostname | tr '[:upper:]' '[:lower:]')
+          case "$h" in i9es|i9es-home) ;; *) echo "REFUSING_HOST=$(hostname)"; exit 42;; esac
+          echo "TARGET_HOST=$(hostname)"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: tf/i9es-anything-analyzer-phase1
+
+      - name: Materialize canonical harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT=/mnt/SERVE/anything-analyzer
+          mkdir -p "$ROOT"/{bin,src,state,logs,workspaces,tools,receipts}
+          cp -f tools/tf-i9es-anything-analyzer-phase1-bootstrap.sh "$ROOT/tools/"
+          cp -f tools/tf-aa-launch-desktop.sh "$ROOT/tools/"
+          cp -f tools/tf-aa-phase1-accept.py "$ROOT/tools/"
+          chmod 0755 "$ROOT/tools/"tf-*.sh "$ROOT/tools/"tf-*.py
+          echo "HARNESS_SHA256"
+          sha256sum "$ROOT/tools/"tf-*
+
+      - name: Select ned execution wrapper
+        id: executor
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$(id -un)" = ned ]; then
+            echo 'mode=direct' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if command -v sudo >/dev/null 2>&1 && sudo -n -Hu ned true 2>/dev/null; then
+            echo 'mode=sudo-ned' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "RUNNER_USER=$(id -un) cannot execute as ned noninteractively" >&2
+          exit 43
+
+      - name: Bootstrap build and persistent configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          SCRIPT=/mnt/SERVE/anything-analyzer/tools/tf-i9es-anything-analyzer-phase1-bootstrap.sh
+          if [ '${{ steps.executor.outputs.mode }}' = direct ]; then
+            "$SCRIPT"
+          else
+            sudo -n -Hu ned "$SCRIPT"
+          fi
+
+      - name: Launch in ned graphical desktop
+        shell: bash
+        run: |
+          set -euo pipefail
+          SCRIPT=/mnt/SERVE/anything-analyzer/tools/tf-aa-launch-desktop.sh
+          if [ '${{ steps.executor.outputs.mode }}' = direct ]; then
+            "$SCRIPT"
+          else
+            sudo -n -Hu ned "$SCRIPT"
+          fi
+
+      - name: Mechanical MCP + MITM acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          SCRIPT=/mnt/SERVE/anything-analyzer/tools/tf-aa-phase1-accept.py
+          if [ '${{ steps.executor.outputs.mode }}' = direct ]; then
+            python3 "$SCRIPT"
+          else
+            sudo -n -Hu ned python3 "$SCRIPT"
+          fi
+
+      - name: Emit non-secret Phase 1 receipts
+        if: always()
+        shell: bash
+        run: |
+          ROOT=/mnt/SERVE/anything-analyzer
+          echo '=== receipt inventory ==='
+          find "$ROOT/receipts" -maxdepth 1 -type f -printf '%f %s bytes\n' 2>/dev/null | sort || true
+          echo '=== acceptance ==='
+          cat "$ROOT/receipts/PHASE1_ACCEPT.json" 2>/dev/null || true
+          echo '=== gui start ==='
+          cat "$ROOT/receipts/PHASE1_GUI_START.txt" 2>/dev/null || true
+          echo '=== listeners (no secrets) ==='
+          ss -ltn 2>/dev/null | grep -E ':(8888|23816)\b' || true
