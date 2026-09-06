@@ -1,0 +1,43 @@
+name: TF RDC Auth Surface Probe
+
+on:
+  push:
+    branches:
+      - tf/i9es-anything-analyzer-phase1
+    paths:
+      - .github/workflows/tf-rdc-auth-surface-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect public auth metadata without credentials
+        shell: bash
+        run: |
+          set -u
+          base=https://rdc.transductive.art
+          echo 'SCHEMA=TF_RDC_AUTH_SURFACE/1'
+          for path in \
+            /user/login \
+            /.well-known/oauth-protected-resource \
+            /.well-known/oauth-protected-resource/mcp \
+            /.well-known/oauth-authorization-server \
+            /.well-known/openid-configuration \
+            /oauth/authorize \
+            /oauth/token \
+            /register \
+            /healthz
+          do
+            echo "===== $path ====="
+            rm -f /tmp/h /tmp/b
+            curl -ksS --connect-timeout 5 --max-time 10 -D /tmp/h -o /tmp/b "$base$path" || true
+            sed -n '1,80p' /tmp/h 2>/dev/null || true
+            echo "BODY_BYTES=$(wc -c </tmp/b 2>/dev/null || echo 0)"
+            head -c 6000 /tmp/b 2>/dev/null || true
+            echo
+          done
+          echo 'AUTH_SURFACE_PROBE_COMPLETE=1'
