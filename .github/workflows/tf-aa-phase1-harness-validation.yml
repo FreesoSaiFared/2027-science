@@ -1,0 +1,48 @@
+name: TF Anything Analyzer Phase 1 Harness Validation
+
+on:
+  push:
+    branches:
+      - tf/i9es-anything-analyzer-phase1
+    paths:
+      - tools/tf-i9es-anything-analyzer-phase1-bootstrap.sh
+      - tools/tf-aa-launch-desktop.sh
+      - tools/tf-aa-phase1-accept.py
+      - .github/workflows/tf-aa-phase1-harness-validation.yml
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tf/i9es-anything-analyzer-phase1
+      - name: Syntax and static checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n tools/tf-i9es-anything-analyzer-phase1-bootstrap.sh
+          bash -n tools/tf-aa-launch-desktop.sh
+          python3 -m py_compile tools/tf-aa-phase1-accept.py
+          if command -v shellcheck >/dev/null 2>&1; then
+            shellcheck -S error \
+              tools/tf-i9es-anything-analyzer-phase1-bootstrap.sh \
+              tools/tf-aa-launch-desktop.sh
+          fi
+          echo 'HARNESS_STATIC_VALIDATION=PASS'
+      - name: Verify pinned upstream commit is fetchable
+        shell: bash
+        run: |
+          set -euo pipefail
+          git ls-remote https://github.com/Mouseww/anything-analyzer.git e3bad7330efaa2b390fdf5899e458e24bf4ad068 | tee /tmp/commit
+          # ls-remote by raw SHA may be empty on some servers, so fetch into a temporary repo as the decisive check.
+          d=$(mktemp -d)
+          git -C "$d" init -q
+          git -C "$d" remote add origin https://github.com/Mouseww/anything-analyzer.git
+          git -C "$d" fetch -q --depth=1 origin e3bad7330efaa2b390fdf5899e458e24bf4ad068
+          test "$(git -C "$d" rev-parse FETCH_HEAD)" = e3bad7330efaa2b390fdf5899e458e24bf4ad068
+          echo 'PINNED_SOURCE_FETCH=PASS'
