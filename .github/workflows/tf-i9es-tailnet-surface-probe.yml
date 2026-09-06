@@ -1,0 +1,43 @@
+name: TF i9es Tailnet Surface Probe
+
+on:
+  push:
+    branches:
+      - tf/i9es-anything-analyzer-phase1
+    paths:
+      - .github/workflows/tf-i9es-tailnet-surface-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe non-secret Tailscale/Funnel surfaces
+        shell: bash
+        run: |
+          set -u
+          echo 'SCHEMA=TF_I9ES_TAILNET_SURFACE/1'
+          for h in i9es-home.tail392a1e.ts.net i9es-home; do
+            echo "=== DNS $h ==="
+            getent ahostsv4 "$h" || true
+            getent ahostsv6 "$h" || true
+          done
+          for u in \
+            'https://i9es-home.tail392a1e.ts.net/' \
+            'https://i9es-home.tail392a1e.ts.net/health' \
+            'https://i9es-home.tail392a1e.ts.net/healthz' \
+            'http://i9es-home.tail392a1e.ts.net:8765/health' \
+            'https://i9es-home.tail392a1e.ts.net:8765/health'
+          do
+            echo "=== $u ==="
+            curl -vkSs --connect-timeout 4 --max-time 8 -D /tmp/h -o /tmp/b "$u" 2>/tmp/e || true
+            sed -n '1,40p' /tmp/h 2>/dev/null || true
+            sed -n '1,80p' /tmp/e 2>/dev/null || true
+            echo "BODY_BYTES=$(wc -c </tmp/b 2>/dev/null || echo 0)"
+            head -c 2000 /tmp/b 2>/dev/null || true
+            echo
+          done
+          echo 'TAILNET_SURFACE_PROBE_COMPLETE=1'
