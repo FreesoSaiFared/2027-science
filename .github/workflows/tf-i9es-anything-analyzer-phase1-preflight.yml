@@ -1,0 +1,156 @@
+name: TF i9es Anything Analyzer Phase 1 Preflight
+
+on:
+  push:
+    branches:
+      - tf/i9es-anything-analyzer-phase1
+    paths:
+      - .github/workflows/tf-i9es-anything-analyzer-phase1-preflight.yml
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: self-hosted
+    timeout-minutes: 10
+    steps:
+      - name: Guard exact i9es host and collect Phase 1 receipt
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          host="$(hostname)"
+          host_lc="$(printf '%s' "$host" | tr '[:upper:]' '[:lower:]')"
+          case "$host_lc" in
+            i9es|i9es-home) ;;
+            *)
+              echo "REFUSING_HOST=$host"
+              echo "This workflow is allowed to mutate only i9ES/i9es-home."
+              exit 42
+              ;;
+          esac
+
+          ROOT=/mnt/SERVE/anything-analyzer
+          RECEIPTS="$ROOT/receipts"
+          mkdir -p "$RECEIPTS"
+          OUT="$RECEIPTS/PHASE1_HOST_PREFLIGHT.txt"
+          TMP="${OUT}.tmp.$$"
+
+          exec > >(tee "$TMP") 2>&1
+
+          echo 'SCHEMA=TF_ANYTHING_ANALYZER_PHASE1_HOST_PREFLIGHT/1'
+          echo "UTC=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "HOSTNAME=$host"
+          echo "USER=$(id -un)"
+          echo "UID_GID=$(id)"
+          echo "KERNEL=$(uname -a)"
+
+          echo
+          echo '=== OS ==='
+          cat /etc/os-release 2>/dev/null || true
+
+          echo
+          echo '=== TAILSCALE ==='
+          command -v tailscale || true
+          tailscale ip -4 2>/dev/null || true
+          tailscale status --peers=false 2>/dev/null || true
+
+          echo
+          echo '=== STORAGE ==='
+          df -hT / /mnt/SERVE 2>&1 || true
+          findmnt /mnt/SERVE 2>/dev/null || true
+          stat -c 'SERVE_MODE=%A SERVE_OWNER=%U:%G SERVE_PATH=%n' /mnt/SERVE 2>/dev/null || true
+          mkdir -p "$ROOT"/{bin,src,state,logs,workspaces,tools,receipts}
+          stat -c 'AA_ROOT_MODE=%A AA_ROOT_OWNER=%U:%G AA_ROOT_PATH=%n' "$ROOT" 2>/dev/null || true
+
+          echo
+          echo '=== MEMORY ==='
+          free -h 2>/dev/null || true
+
+          echo
+          echo '=== GPU ==='
+          command -v nvidia-smi >/dev/null && nvidia-smi --query-gpu=name,driver_version,memory.total,memory.used --format=csv,noheader || true
+          command -v rocm-smi >/dev/null && rocm-smi --showproductname --showmeminfo vram || true
+          lspci 2>/dev/null | grep -Ei 'vga|3d|display' || true
+
+          echo
+          echo '=== TOOLCHAIN ==='
+          for c in git node npm pnpm corepack python3 curl wget jq fuse fusermount3; do
+            if command -v "$c" >/dev/null 2>&1; then
+              printf '%-12s ' "$c"
+              command -v "$c"
+              case "$c" in
+                git) git --version || true ;;
+                node) node --version || true ;;
+                npm) npm --version || true ;;
+                pnpm) pnpm --version || true ;;
+                corepack) corepack --version || true ;;
+                python3) python3 --version || true ;;
+                fusermount3) fusermount3 --version 2>&1 | head -n 1 || true ;;
+              esac
+            else
+              echo "$c MISSING"
+            fi
+          done
+
+          echo
+          echo '=== FUSE ==='
+          ls -l /dev/fuse 2>/dev/null || true
+          grep -v '^#' /etc/fuse.conf 2>/dev/null || true
+
+          echo
+          echo '=== LOGIN SESSIONS ==='
+          loginctl list-sessions --no-legend 2>/dev/null || true
+          while read -r sid _; do
+            [ -n "${sid:-}" ] || continue
+            echo "--- SESSION $sid ---"
+            loginctl show-session "$sid" \
+              -p Name -p User -p Type -p Class -p State -p Display -p Desktop -p Remote -p Leader \
+              2>/dev/null || true
+          done < <(loginctl list-sessions --no-legend 2>/dev/null || true)
+
+          echo
+          echo '=== GRAPHICAL ENVIRONMENT (FILTERED) ==='
+          desktop_pid="$(pgrep -u "$(id -u)" -n -f 'gnome-shell|plasmashell|xfce4-session|cinnamon|mate-session' 2>/dev/null || true)"
+          echo "DESKTOP_PID=${desktop_pid:-NONE}"
+          if [ -n "${desktop_pid:-}" ] && [ -r "/proc/$desktop_pid/environ" ]; then
+            tr '\0' '\n' < "/proc/$desktop_pid/environ" | grep -E '^(DISPLAY|WAYLAND_DISPLAY|DBUS_SESSION_BUS_ADDRESS|XDG_RUNTIME_DIR|XDG_SESSION_TYPE|XDG_CURRENT_DESKTOP)=' || true
+          fi
+
+          echo
+          echo '=== BROWSERS ==='
+          for c in google-chrome google-chrome-stable brave-browser brave-browser-stable chromium chromium-browser firefox; do
+            command -v "$c" 2>/dev/null || true
+          done
+          pgrep -a -u "$(id -u)" -f 'chrome|brave|chromium|firefox' 2>/dev/null | head -n 80 || true
+
+          echo
+          echo '=== RUSTDESK ==='
+          pgrep -a -f 'rustdesk' 2>/dev/null || true
+
+          echo
+          echo '=== COMFYUI ==='
+          pgrep -a -f 'ComfyUI|comfyui|main.py.*8188|python.*8188' 2>/dev/null | head -n 80 || true
+
+          echo
+          echo '=== RELEVANT LISTENERS ==='
+          ss -ltnp 2>/dev/null | grep -E ':(22|3000|8188|8765|8888|23816|21115|21116|21117|21118|21119)\b' || true
+
+          echo
+          echo '=== ANYTHING ANALYZER EXISTING STATE ==='
+          pgrep -a -f 'Anything.Analyzer|anything-analyzer|electron.*anything' 2>/dev/null || true
+          find "$ROOT" -maxdepth 2 -mindepth 1 -printf '%y %p\n' 2>/dev/null | sort | head -n 200 || true
+
+          echo
+          echo 'PREFLIGHT_COMPLETE=1'
+
+          mv -f "$TMP" "$OUT"
+          echo "RECEIPT=$OUT"
+          sha256sum "$OUT"
+
+      - name: Echo canonical receipt after collection
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat /mnt/SERVE/anything-analyzer/receipts/PHASE1_HOST_PREFLIGHT.txt
