@@ -1,0 +1,49 @@
+name: TF i9es SSH Surface Probe
+
+on:
+  push:
+    branches:
+      - tf/i9es-anything-analyzer-phase1
+    paths:
+      - .github/workflows/tf-i9es-ssh-surface-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify public SSH identity and auth methods
+        shell: bash
+        run: |
+          set -u
+          HOST=24.132.164.28
+          PORT=22
+          EXPECTED='SHA256:WhJT0a8/8guNLsi6NzoE8Mkmj5eyUYa7Y+nUZK9KlyM'
+          echo 'SCHEMA=TF_I9ES_SSH_SURFACE/1'
+          echo "UTC=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo '=== KEYSCAN ==='
+          timeout 10 ssh-keyscan -T 5 -p "$PORT" -t ed25519 "$HOST" 2>/tmp/keyscan.err | tee /tmp/keyscan.out || true
+          cat /tmp/keyscan.err || true
+          if [ -s /tmp/keyscan.out ]; then
+            awk '{print $2" "$3}' /tmp/keyscan.out | ssh-keygen -lf - -E sha256 | tee /tmp/fp
+            if grep -Fq "$EXPECTED" /tmp/fp; then echo 'HOSTKEY_MATCH=1'; else echo 'HOSTKEY_MATCH=0'; fi
+          else
+            echo 'HOSTKEY_MATCH=UNKNOWN'
+          fi
+          echo '=== AUTH METHOD PROBE ==='
+          set +e
+          timeout 15 ssh -vv \
+            -p "$PORT" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -o PreferredAuthentications=none \
+            -o NumberOfPasswordPrompts=0 \
+            ned@"$HOST" true 2>&1 | tail -n 120
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "SSH_NONE_RC=$rc"
+          echo 'SSH_SURFACE_PROBE_COMPLETE=1'
