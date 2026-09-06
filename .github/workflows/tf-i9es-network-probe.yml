@@ -1,0 +1,67 @@
+name: TF i9es External Reachability Probe
+
+on:
+  push:
+    branches:
+      - tf/i9es-anything-analyzer-phase1
+    paths:
+      - .github/workflows/tf-i9es-network-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe known i9es public/control surfaces
+        shell: bash
+        run: |
+          set -u
+          echo 'SCHEMA=TF_I9ES_EXTERNAL_REACHABILITY/1'
+          echo "UTC=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo '=== DNS ==='
+          for h in comfyui.2027.science rdc.transductive.art; do
+            echo "--- $h ---"
+            getent ahostsv4 "$h" || true
+          done
+
+          echo '=== PUBLIC IP PORTS ==='
+          for p in 22 80 443 3000 8188 8765 8888 23816 21115 21116 21117 21118 21119; do
+            if timeout 3 bash -c "</dev/tcp/24.132.164.28/$p" 2>/dev/null; then
+              echo "PORT $p OPEN"
+            else
+              echo "PORT $p CLOSED_OR_FILTERED"
+            fi
+          done
+
+          echo '=== HTTPS HEADERS ==='
+          for u in \
+            https://comfyui.2027.science/ \
+            https://comfyui.2027.science/system_stats \
+            https://rdc.transductive.art/healthz \
+            https://rdc.transductive.art/readyz \
+            https://rdc.transductive.art/mcp
+          do
+            echo "--- $u ---"
+            curl -ksS --connect-timeout 5 --max-time 10 -D - -o /tmp/body "$u" | sed -n '1,40p' || true
+            echo "BODY_BYTES=$(wc -c </tmp/body 2>/dev/null || echo 0)"
+            head -c 1000 /tmp/body 2>/dev/null || true
+            echo
+          done
+
+          echo '=== MCP INITIALIZE WITHOUT CREDENTIALS ==='
+          curl -ksS --connect-timeout 5 --max-time 10 \
+            -D /tmp/mcp-h \
+            -o /tmp/mcp-b \
+            -H 'content-type: application/json' \
+            -H 'accept: application/json, text/event-stream' \
+            -H 'mcp-protocol-version: 2025-06-18' \
+            --data '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"tf-network-probe","version":"1"}}}' \
+            https://rdc.transductive.art/mcp || true
+          sed -n '1,80p' /tmp/mcp-h 2>/dev/null || true
+          echo '--- body ---'
+          head -c 4000 /tmp/mcp-b 2>/dev/null || true
+          echo
+          echo 'PROBE_COMPLETE=1'
